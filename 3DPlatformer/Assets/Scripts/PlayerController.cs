@@ -10,6 +10,13 @@ public class PlayerController : MonoBehaviour
     private Camera theCamera;
     public GameObject playerModel;
     public Animator animator;
+    private static PlayerController _instance;
+    public static PlayerController Instance { get => _instance; }
+
+    void Awake()
+    {
+        _instance = this;
+    }
 
     void Start()
     {
@@ -20,16 +27,21 @@ public class PlayerController : MonoBehaviour
     {
         float yStore = _moveDirection.y;
         _moveDirection = Input.GetAxisRaw("Vertical") * transform.forward + Input.GetAxisRaw("Horizontal") * transform.right;
-        _moveDirection = _moveDirection.normalized;
+        _moveDirection.Normalize();
         _moveDirection *= moveSpeed;
         _moveDirection.y = yStore;
 
-        if (Input.GetButtonDown("Jump"))
+        if (characterController.isGrounded)
         {
-            _moveDirection.y = jumpForce;
+            if (Input.GetButtonDown("Jump"))
+            {
+                _moveDirection.y = jumpForce;
+            }
         }
-
-        _moveDirection.y += Physics.gravity.y * Time.deltaTime * gravityScale;
+        else
+        {
+            _moveDirection.y += Physics.gravity.y * Time.deltaTime * gravityScale;
+        }
 
         characterController.Move(_moveDirection * Time.deltaTime);
 
@@ -39,7 +51,8 @@ public class PlayerController : MonoBehaviour
             Quaternion modelRotation = Quaternion.LookRotation(new Vector3(_moveDirection.x, 0f, _moveDirection.z));
             playerModel.transform.rotation = Quaternion.Slerp(playerModel.transform.rotation, modelRotation, Time.deltaTime * 10f);
         }
-
         animator.SetFloat("Speed", Mathf.Abs(_moveDirection.x) + Mathf.Abs(_moveDirection.z));
+        animator.SetBool("Grounded", characterController.isGrounded);
+        animator.SetFloat("Fall Velocity", _moveDirection.y);
     }
 }
